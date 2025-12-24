@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Management | Hospital Control Center</title>
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+    body {
+        background: linear-gradient(135deg, #f0fdf4, #ecfeff);
+        color: #064e3b;
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .glass-header {
+        background: rgba(6, 78, 59, 0.08);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(6,78,59,0.15);
+        padding: 18px 30px;
+        margin-bottom: 30px;
+    }
+
+    .page-wrapper {
+        padding: 30px 35px;
+    }
+
+    .soft-card {
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 30px;
+        box-shadow: 0 12px 35px rgba(6,78,59,0.12);
+        margin-bottom: 30px;
+    }
+
+    .form-control {
+        border-radius: 14px;
+        padding: 12px 14px;
+    }
+
+    .btn-primary-soft {
+        background: linear-gradient(135deg, #0d9488, #14b8a6);
+        border: none;
+        color: #fff;
+        border-radius: 16px;
+        padding: 10px 20px;
+    }
+
+    .btn-update-soft {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        border: none;
+        color: #fff;
+        border-radius: 14px;
+    }
+
+    .btn-danger-soft {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: #fff;
+        border-radius: 14px;
+    }
+
+    .table-wrapper {
+        max-height: 420px;
+        overflow-y: auto;
+    }
+
+    .table thead {
+        background: #ecfeff;
+    }
+
+    .modal-content {
+        border-radius: 22px;
+    }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="glass-header d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">👩‍💼 Staff Management</h4>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">← Back</a>
+</div>
+
+<div class="page-wrapper">
+
+    <!-- Add Staff -->
+    <div class="soft-card">
+        <h5 class="mb-4">Add New Staff</h5>
+        <form id="addStaffForm">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Full Name" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="email" class="form-control" placeholder="Email" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Role (Doctor / Nurse)" required>
+                </div>
+            </div>
+            <div class="text-end mt-4">
+                <button class="btn btn-primary-soft">Add Staff</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Staff Table -->
+    <div class="soft-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">All Staff</h5>
+            <input type="text" class="form-control w-25" id="staffFilter" placeholder="Search staff">
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="staffTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Update Modal -->
+<div class="modal fade" id="updateStaffModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#0d9488;color:#fff">
+        <h5 class="modal-title">Update Staff</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="updateStaffForm">
+          <input type="hidden" id="updateStaffId">
+          <div class="mb-3">
+            <input type="text" class="form-control" id="updateStaffName" required>
+          </div>
+          <div class="mb-3">
+            <input type="email" class="form-control" id="updateStaffEmail" required>
+          </div>
+          <div class="mb-3">
+            <input type="text" class="form-control" id="updateStaffRole" required>
+          </div>
+          <button type="submit" class="btn btn-primary-soft w-100">Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const staffTable = document.getElementById("staffTable");
+
+    const fetchStaff = () => {
+        fetch("/staff/get_all")
+        .then(res => res.json())
+        .then(data => {
+            staffTable.innerHTML = "";
+            data.forEach((s,i) => {
+                staffTable.innerHTML += `
+                <tr data-id="${s.id}">
+                    <td>${i+1}</td>
+                    <td>${s.name}</td>
+                    <td>${s.email}</td>
+                    <td>${s.role}</td>
+                    <td>
+                        <button class="btn btn-sm btn-update-soft updateBtn">Update</button>
+                        <button class="btn btn-sm btn-danger-soft deleteBtn">Delete</button>
+                    </td>
+                </tr>`;
+            });
+        });
+    };
+    fetchStaff();
+
+    addStaffForm.addEventListener("submit", e => {
+        e.preventDefault();
+        const f = e.target;
+        fetch("/staff/add", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                name:f[0].value,
+                email:f[1].value,
+                role:f[2].value
+            })
+        }).then(()=>{f.reset();fetchStaff();});
+    });
+
+    staffTable.addEventListener("click", e => {
+        const tr = e.target.closest("tr");
+        const id = tr?.dataset.id;
+
+        if(e.target.classList.contains("deleteBtn") && id){
+            if(confirm("Delete this staff?")){
+                fetch(`/staff/delete/${id}`,{method:"DELETE"}).then(fetchStaff);
+            }
+        }
+
+        if(e.target.classList.contains("updateBtn") && id){
+            updateStaffId.value = id;
+            updateStaffName.value = tr.cells[1].textContent;
+            updateStaffEmail.value = tr.cells[2].textContent;
+            updateStaffRole.value = tr.cells[3].textContent;
+            new bootstrap.Modal(updateStaffModal).show();
+        }
+    });
+
+    updateStaffForm.addEventListener("submit", e => {
+        e.preventDefault();
+        fetch(`/staff/update/${updateStaffId.value}`,{
+            method:"PUT",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                name:updateStaffName.value,
+                email:updateStaffEmail.value,
+                role:updateStaffRole.value
+            })
+        }).then(()=>{
+            fetchStaff();
+            bootstrap.Modal.getInstance(updateStaffModal).hide();
+        });
+    });
+
+    staffFilter.addEventListener("keyup", ()=>{
+        const f = staffFilter.value.toLowerCase();
+        document.querySelectorAll("#staffTable tr").forEach(r=>{
+            r.style.display = r.cells[1].textContent.toLowerCase().includes(f) ? "" : "none";
+        });
+    });
+});
+</script>
+</body>
+</html>
